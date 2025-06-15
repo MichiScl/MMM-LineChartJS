@@ -41,11 +41,10 @@ var config = {
             config: {
                 chartId: "outdoorclimate", // Unique ID for this module instance
                 dataFileUrl: "/home/pi/MagicMirror/modules/MMM-LineChartJS/data/dht_data_outdoor.json",
-                // Or an HTTP URL: "http://192.168.178.59/sensordata/dht_data_outdoor.json",
+                // Or an HTTP URL: "http://192.168.XXX.XX/sensordata/dht_data_outdoor.json",
                 updateInterval: 10 * 60 * 1000, // Data update interval in milliseconds (here: every 10 minutes)
                 hoursToDisplay: 24, // Display data for the last X hours
                 maxDataPoints: 500, // Maximum number of data points to display
-
                 chartWidth: 500, // Width of the chart area in pixels
                 chartHeight: 250, // Height of the chart area in pixels
                 chartTitle: "Outdoor Climate (24h)", // Title displayed above the chart
