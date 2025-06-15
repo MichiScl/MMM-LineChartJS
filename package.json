@@ -1,0 +1,27 @@
+{
+  "name": "mmm-linechartjs",
+  "version": "1.0.0",
+  "description": "MagicMirror2 module to display JOSN data as a configurable line chart using Chart.js, with support for multiple lines and local/remote data sources.",
+  "main": "node_helper.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "magicmirror",
+    "module",
+    "chart",
+    "linechart",
+    "sensor",
+    "data",
+    "temperature",
+    "humidity",
+    "chart.js",
+    "raspberrypi"
+  ],
+  "author": "MichiScl",
+  "license": "MIT",
+  "dependencies":
+  {
+    "node-fetch": "^2.6.7"
+  }
+}

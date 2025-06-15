@@ -1,0 +1,91 @@
+/* MMM-Charts.css */
+
+.mm-charts-wrapper {
+    /* MagicMirror handles the positioning (top_left, bottom_left, etc.) for this wrapper. */
+    box-sizing: border-box;
+    /* Reduces the spacing to the module below */
+    margin-bottom: 5px; /* Adjust this value to decrease or increase spacing */
+}
+
+.mm-charts-card {
+    /* Main container for the chart card */
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    border-radius: 8px; /* Rounded corners */
+    padding: 10px; /* Inner padding of the card */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+    max-width: 100%; /* Ensure it fits within the parent container */
+
+    /* Relative positioning for child elements with absolute positioning (e.g., the header) */
+    position: relative;
+    
+    /* Flexbox for internal layout: title above canvas */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center elements horizontally within the card */
+}
+
+.mm-charts-header {
+    /* Styles for the chart title */
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #eee; /* Light text color */
+    text-align: center; /* Center text within the header */
+    width: 100%; /* Ensure the header takes full width within the card */
+    
+    /* Position the header absolutely at the top of the card */
+    position: absolute; /* Relative to .mm-charts-card */
+    top: 0;
+    left: 0;
+    padding-top: 10px; /* Spacing from the top edge of the card */
+    z-index: 10; /* Ensure it's above the canvas */
+    background-color: transparent; /* Or a slightly translucent background, if needed */
+}
+
+.mm-charts-canvas-container {
+    /* Container for the canvas element */
+    position: relative; /* Important for responsive canvas */
+    /* Width and height are set via JS config.chartWidth/Height */
+    display: block; /* Ensure it's a block element */
+    overflow: hidden; /* Prevent content from overflowing */
+
+    /* Add top margin/padding to prevent overlap with the absolutely positioned header */
+    margin-top: 35px; /* Adjust this value based on header height to prevent overlap */
+    padding: 5px; /* Inner padding within the canvas container */
+    max-width: 100%; /* Ensure the container does not overflow */
+}
+
+.status-message {
+    /* Styles for loading, error, or "no data" messages */
+    font-size: 0.9em;
+    color: #f39c12; /* Warning color */
+    margin-top: 10px;
+    text-align: center;
+    width: 100%;
+}
+
+canvas {
+    /* Styles for the Chart.js canvas element */
+    background-color: rgba(255, 255, 255, 0.05); /* Slightly translucent background for the chart itself */
+    border-radius: 5px;
+    box-sizing: border-box;
+    display: block; /* Removes extra space below the canvas */
+    width: 100% !important; /* Forces the canvas to take the full width of its container */
+    height: 100% !important; /* Forces the canvas to take the full height of its container */
+}
+
+/* Responsive adjustments for smaller screens */
+@media screen and (max-width: 768px) {
+    .mm-charts-card {
+        padding: 5px;
+        border-radius: 5px;
+    }
+
+    .mm-charts-header {
+        font-size: 1em;
+        padding-top: 5px;
+    }
+
+    .mm-charts-canvas-container {
+        margin-top: 30px; /* Adjust for smaller header on mobile devices */
+    }
+}
