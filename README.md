@@ -1,15 +1,35 @@
 # Description
-A MagicMirror² module for flexible display of sensor data as configurable line charts using Chart.js. It supports reading data from local files or external URLs and allows displaying multiple independent data lines within a single chart.
+A MagicMirror² module for flexible display of sensor data as configurable line charts using Chart.js.\
+It supports reading data from local files or external URLs and allows displaying multiple independent data lines within a single chart.
 
-MMM-LineChartJS is a powerful module for MagicMirror² designed to graphically represent various types of time-series data. It is ideal for displaying sensor data such as temperature, humidity, pressure, or other numerical values over a specified period. The module uses Chart.js for chart rendering and offers extensive configuration options to customize its appearance and data sources.
+MMM-LineChartJS is a powerful module for MagicMirror² designed to graphically represent various types of time-series data.\
+It is ideal for displaying sensor data such as temperature, humidity, pressure, or other numerical values over a specified period.\
+The module uses Chart.js for chart rendering and offers extensive configuration options to customize its appearance and data sources.
 
 # Pictures
-// pictures to be added
+// to be added
 
-# JSON Data Format
-The module expects JSON data which is an array of objects. Each object should contain a timestamp and the corresponding data points for the defined lines.
-The data can be fetched via URL or via a local JSON file.
-Ensure that the xDataID and yDataIDs in your config.js exactly match the keys in your JSON data.
+# Data Input
+
+## Data Source
+
+The module expects data to be provided as a JSON file.\
+The data source path is configured via the `dataFileUrl` option. By default, it's `undefined`, so you **must** configure it.
+
+Example local file path:
+````
+dataFileUrl = "/home/pi/MagicMirror/modules/MMM-LineChartJS/data/dht_data_outdoor.json",
+````
+or via an URL (detected by string starting with 'http'):
+````
+dataFileUrl = "http://192.168.178.59/sensordata/dht_data_outdoor.json",
+````
+
+## Data Format
+The module expects JSON data which is an array of objects.\
+Each object should contain a timestamp and the corresponding data points for the defined lines.\
+Ensure that the `xDataID` and `yDataID` in your config.js exactly matches the keys in your JSON data.\
+In example below `xDataID = timestamp` and `yDataID = temperature`
 
 ## Example data dht_data_outdoor.json:
 ````
