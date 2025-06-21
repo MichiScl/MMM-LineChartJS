@@ -1,13 +1,13 @@
-/* MMM-Charts.css */
+/* MMM-LineChartJS.css */
 
-.mm-charts-wrapper {
+.mmm-linechartjs-wrapper {
     /* MagicMirror handles the positioning (top_left, bottom_left, etc.) for this wrapper. */
     box-sizing: border-box;
     /* Reduces the spacing to the module below */
     margin-bottom: 5px; /* Adjust this value to decrease or increase spacing */
 }
 
-.mm-charts-card {
+.mmm-linechartjs-card {
     /* Main container for the chart card */
     background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
     border-radius: 8px; /* Rounded corners */
@@ -24,7 +24,7 @@
     align-items: center; /* Center elements horizontally within the card */
 }
 
-.mm-charts-header {
+.mmm-linechartjs-header {
     /* Styles for the chart title */
     font-size: 1.2em;
     font-weight: bold;
@@ -33,7 +33,7 @@
     width: 100%; /* Ensure the header takes full width within the card */
     
     /* Position the header absolutely at the top of the card */
-    position: absolute; /* Relative to .mm-charts-card */
+    position: absolute; /* Relative to .mmm-linechartjs-card */
     top: 0;
     left: 0;
     padding-top: 10px; /* Spacing from the top edge of the card */
@@ -41,7 +41,7 @@
     background-color: transparent; /* Or a slightly translucent background, if needed */
 }
 
-.mm-charts-canvas-container {
+.mmm-linechartjs-canvas-container {
     /* Container for the canvas element */
     position: relative; /* Important for responsive canvas */
     /* Width and height are set via JS config.chartWidth/Height */
@@ -75,17 +75,17 @@ canvas {
 
 /* Responsive adjustments for smaller screens */
 @media screen and (max-width: 768px) {
-    .mm-charts-card {
+    .mmm-linechartjs-card {
         padding: 5px;
         border-radius: 5px;
     }
 
-    .mm-charts-header {
+    .mmm-linechartjs-header {
         font-size: 1em;
         padding-top: 5px;
     }
 
-    .mm-charts-canvas-container {
+    .mmm-linechartjs-canvas-container {
         margin-top: 30px; /* Adjust for smaller header on mobile devices */
     }
 }

@@ -13,21 +13,21 @@ The module uses Chart.js for chart rendering and offers extensive configuration 
 
 ## Data Source
 
-The module expects data to be provided as a JSON file.\
-The data source path is configured via the `dataFileUrl` option. By default, it's `undefined`, so you **must** configure it.
+The module expects data to be provided in JSON format.\
+The data source to this module can be configured, to use a local file.
 
 Example local file path:
 ````
 dataFileUrl = "/home/pi/MagicMirror/modules/MMM-LineChartJS/data/dht_data_outdoor.json",
 ````
-or via an URL (detected by string starting with 'http'):
+or via fetch from an URL (detected by string starting with 'http'):
 ````
-dataFileUrl = "http://192.168.178.59/sensordata/dht_data_outdoor.json",
+dataFileUrl = "http://192.168.XXX.XX/sensordata/dht_data_outdoor.json",
 ````
 
 ## Data Format
 The module expects JSON data which is an array of objects.\
-Each object should contain a timestamp and the corresponding data points for the defined lines.\
+The module expects JSON data which is an array of objects. Each object needs to contain at least two data elements (e.g. timestamp & data value)
 Ensure that the `xDataID` and `yDataID` in your config.js exactly matches the keys in your JSON data.\
 In example below `xDataID = timestamp` and `yDataID = temperature`
 
@@ -35,23 +35,17 @@ In example below `xDataID = timestamp` and `yDataID = temperature`
 ````
 [
   {
-    "sensor_id": "outdoor",
     "timestamp": "2025-06-12T20:22:06",
-    "timestamp_server_received": "2025-06-12 20:22:06",
     "temperature": 27.5,
     "humidity": 45
   },
   {
-    "sensor_id": "outdoor",
     "timestamp": "2025-06-12T20:23:09",
-    "timestamp_server_received": "2025-06-12 20:23:09",
     "temperature": 27.5,
     "humidity": 45.1
   },
   {
-    "sensor_id": "outdoor",
     "timestamp": "2025-06-12T20:24:11",
-    "timestamp_server_received": "2025-06-12 20:24:11",
     "temperature": 27.5,
     "humidity": 45
   }
@@ -59,7 +53,7 @@ In example below `xDataID = timestamp` and `yDataID = temperature`
 ````
 
 # Installation
-To install this module in your MagicMirror²:
+To install this module in your MagicMirror² execute following steps:
 ````
 cd ~/MagicMirror/modules
 git clone https://github.com/MichiScl/MMM-LineChartJS.git
@@ -111,9 +105,8 @@ You can add multiple instances of the module by using different chartIds and con
 | `config.chartHeight` | The height of the chart area in pixels. Note: CSS can override this for responsiveness. | `300` | Any positive integer (pixels) |
 | `config.chartTitle` | The title text displayed above the chart card. | `"Chart Title"` | Any string |
 | `config.xDataID` | The key in your JSON data objects that holds the values for the x-axis (e.g., "timestamp"). | `"timestamp"` | Any string (matching a JSON key in your data) |
-| `config.xDataIsTime` | Specifies whether the x-axis represents time data (`true`) or categorical data (`false`). | `true` | `true`, `false` |
 | `config.xDataTimeFormat` | Optional format string for parsing timestamps in your raw JSON data. If `undefined`, the `node_helper` attempts automatic detection. | `undefined` | A string representing a date/time format (e.g., `"YYYY-MM-DD HH:MM:SS"`, `"DD.MM.YYYYTHH:MM:SSZ"`) or `undefined`. |
-| `config.xAxisDisplayFormat` | The display format for the time labels on the x-axis when `xDataIsTime` is `true`. | `"HH:mm"` | Any valid Chart.js time format string (e.g., `"HH:mm"`, `"MMM D"`, `"YYYY-MM-DD"`) |
+| `config.xAxisDisplayFormat` | The display format for the time labels on the x-axis. | `"HH:mm"` | Any valid Chart.js time format string (e.g., `"HH:mm"`, `"MMM D"`, `"YYYY-MM-DD"`) |
 | `config.xAxisPosition` | The position of the x-axis. | `"bottom"` | `"bottom"`, `"top"` |
 | `config.xAxisLabel` | The label displayed along the x-axis. | `"Record Time"` | Any string |
 | `config.xAxisLabelShow` | Controls the visibility of the x-axis label. | `false` | `true`, `false` |
@@ -137,4 +130,3 @@ You can add multiple instances of the module by using different chartIds and con
 | `chartConfig[i].yAxisLabelShow` | Controls the visibility of this line's y-axis label. | `false` | `true`, `false` |
 | `chartConfig[i].yAxisAutoTicks` | If `true`, Chart.js automatically calculates grid ticks and their spacing for this y-axis. If `false`, `yAxisTickSteps` is used. | `true` | `true`, `false` |
 | `chartConfig[i].yAxisTickSteps` | The step size for y-axis ticks. Only effective when `yAxisAutoTicks` is `false`. | `2` (for Temperature) or `10` (for Humidity) | Any positive number |
-

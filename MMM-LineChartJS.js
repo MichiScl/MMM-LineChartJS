@@ -19,7 +19,6 @@ Module.register("MMM-LineChartJS", {
 
         // Settings for x-axis data (global for all chartConfigs)
         xDataID: "timestamp", // JSON identifier to use as x-axis timestamps
-        xDataIsTime: true, // Is the x-axis a time axis? (false for category axis)
         xDataTimeFormat: undefined, // Configuration option for the raw data time format (String, e.g., "YYYY-MM-DD HH:MM:SS"). Undefined = node_helper attempts automatic parsing.
         xAxisDisplayFormat: "HH:mm", // Display format on the x-axis
         xAxisPosition: "bottom", // "bottom" or "top"
@@ -156,24 +155,25 @@ Module.register("MMM-LineChartJS", {
     // Override the getDom method.
     getDom: function() {
         let wrapper = document.createElement("div");
-        wrapper.className = "mm-charts-wrapper"; // Keep generic class name
+        wrapper.className = "mmm-linechartjs-wrapper"; // Keep generic class name
 
         if (!this.canvasCreated)
         {
             // Create the card container only once
             const card = document.createElement("div");
-            card.className = "mm-charts-card";
+            card.className = "mmm-linechartjs-card";
             wrapper.appendChild(card);
 
             // Add title
             const titleElement = document.createElement("div");
-            titleElement.className = "mm-charts-header";
+            titleElement.className = "mmm-linechartjs-header";
             titleElement.textContent = this.config.chartTitle; // Use chartTitle
             card.appendChild(titleElement);
+		
 
             // Add canvas container
             const canvasContainer = document.createElement("div");
-            canvasContainer.className = "mm-charts-canvas-container";
+            canvasContainer.className = "mmm-linechartjs-canvas-container";
             canvasContainer.style.width = this.config.chartWidth + 'px';
             canvasContainer.style.height = this.config.chartHeight + 'px';
             card.appendChild(canvasContainer);
@@ -205,7 +205,6 @@ Module.register("MMM-LineChartJS", {
         return wrapper; // Return the originally created wrapper
     },
 
-
     // Helper function to update/create the chart
     updateChart: function() {
         const self = this;
@@ -216,10 +215,10 @@ Module.register("MMM-LineChartJS", {
             return;
         }
 
-        // <<< IMPORTANT: Destroy existing Chart instance before creating a new one >>>
+        // Destroy existing Chart instance before creating a new one
         if (this.chartInstance) {
             this.chartInstance.destroy();
-            this.chartInstance = null; // Set to null to ensure it's marked as destroyed
+            this.chartInstance = null;
             Log.info(`MMM-LineChartJS (${this.config.chartId}): Existing chart instance destroyed.`);
         }
 
@@ -229,18 +228,19 @@ Module.register("MMM-LineChartJS", {
         // Ensure chartConfig exists and is an array
         if (!Array.isArray(this.config.chartConfig) || this.config.chartConfig.length === 0) {
             Log.error(`MMM-LineChartJS (${this.config.chartId}): 'chartConfig' is not configured as an array or is empty. No graphs can be drawn.`);
-            if (this.canvasElement) {
+            if (this.canvasElement) 
+			{
                 this.canvasElement.style.display = 'none';
             }
             const errorMsg = document.createElement("div");
             errorMsg.className = "dimmed light small status-message";
             errorMsg.innerHTML = `Error: 'chartConfig' is not configured correctly.`;
-            if (this.chartContainer) {
+            if (this.chartContainer) 
+			{
                  this.chartContainer.appendChild(errorMsg);
             }
             return;
         }
-
 
         // Iterate over each defined chart configuration
         this.config.chartConfig.forEach((chartLineConfig, index) => {
@@ -249,7 +249,7 @@ Module.register("MMM-LineChartJS", {
             this.sensorData.forEach(entry => {
                 // Safely convert parsedTimestamp to a Date object if it's still a string
                 let xValue = entry.parsedTimestamp;
-                if (typeof xValue === 'string' && this.config.xDataIsTime) {
+                if (typeof xValue === 'string') {
                     const tempDate = new Date(xValue);
                     if (!isNaN(tempDate.getTime())) {
                         xValue = tempDate;
@@ -261,8 +261,8 @@ Module.register("MMM-LineChartJS", {
 
                 const yValue = entry[chartLineConfig.yDataID]; // y-axis is dynamic via yDataID
 
-                // Additional check: Ensure xValue is a Date object if xDataIsTime is true
-                const isValidXValue = this.config.xDataIsTime ? (xValue instanceof Date && !isNaN(xValue.getTime())) : (xValue !== undefined && xValue !== null);
+                // Additional check: Ensure xValue is a Date object
+                const isValidXValue = (xValue instanceof Date && !isNaN(xValue.getTime()));
 
                 // Ensure both x and y values exist and are valid
                 if (isValidXValue && yValue !== undefined && yValue !== null && !isNaN(yValue)) {
@@ -272,8 +272,8 @@ Module.register("MMM-LineChartJS", {
                 }
             });
 
-            // Sort only if the X-axis is a time axis and data exists
-            if (this.config.xDataIsTime && lineData.length > 0) {
+            // Sort only if data exists
+            if (lineData.length > 0) {
                 lineData.sort((a, b) => {
                     // Additional checks before calling getTime()
                     if (a.x instanceof Date && b.x instanceof Date) {
@@ -339,14 +339,14 @@ Module.register("MMM-LineChartJS", {
 
         // X-axis configuration
         const xAxisConfig = {
-            type: this.config.xDataIsTime ? 'time' : 'category', // Dynamic type
-            time: this.config.xDataIsTime ? {
+            type: 'time', // Always time
+            time: {
                 unit: 'hour', // Default for time axes, can be adjusted if needed
                 displayFormats: {
                     hour: this.config.xAxisDisplayFormat
                 },
                 tooltipFormat: 'dd.MM.yyyy HH:mm:ss' // Default for tooltip
-            } : undefined,
+            },
             title: {
                 display: this.config.xAxisLabelShow,
                 text: this.config.xAxisLabel,
