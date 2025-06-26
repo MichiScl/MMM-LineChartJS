@@ -44,12 +44,9 @@
 .mmm-linechartjs-info-container {
     /* Container for the additional info lines */
     width: 100%;
-    text-align: left; /* Align info text to the left */
+    text-align: center;
     margin-top: 30px; /* Adjust to position below the header */
     padding-bottom: 5px; /* Space between info lines and canvas */
-    padding-left: 10px; /* Add some padding to align with the main content */
-    padding-right: 10px;
-    /* This will be controlled by JS for display: none/block */
 }
 
 .mmm-linechartjs-info-line {
@@ -57,6 +54,9 @@
     font-size: 0.8em;
     color: #bbb; /* Slightly dimmer text for info */
     margin-bottom: 2px; /* Small spacing between info lines */
+    text-align: left; /* Align text to the left */
+    padding-left: 10px; /* Add some padding to align with the main content */
+    padding-right: 10px;
 }
 
 
@@ -68,7 +68,8 @@
     overflow: hidden; /* Prevent content from overflowing */
 
     /* Add top margin/padding to prevent overlap with the absolutely positioned header */
-    /* This will now be dynamically set by JS */
+    /* Updated margin-top to account for header and info container */
+    margin-top: 60px; /* Adjusted to make space for header + info lines */
     padding: 5px; /* Inner padding within the canvas container */
     max-width: 100%; /* Ensure the container does not overflow */
 }
@@ -105,7 +106,7 @@ canvas {
     }
 
     .mmm-linechartjs-canvas-container {
-        /* This will be dynamically set by JS */
+        margin-top: 50px; /* Adjust for smaller header and info lines on mobile devices */
     }
 
     .mmm-linechartjs-info-line {

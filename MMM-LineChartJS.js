@@ -98,7 +98,6 @@ Module.register("MMM-LineChartJS", {
         this.chartContainer = null; // Reference to the card container (div containing title, canvas)
         this.canvasElement = null; // Reference to the actual canvas DOM element
         this.infoLines = {}; // Store references to info lines for updates
-        this.infoContainer = null; // Reference to the info lines container
 
         this.loadChartJsScript();
     },
@@ -187,8 +186,6 @@ Module.register("MMM-LineChartJS", {
             // Add info lines container
             const infoContainer = document.createElement("div");
             infoContainer.className = "mmm-linechartjs-info-container";
-            // Initially hide the container, will be shown if any InfoShow is true
-            infoContainer.style.display = 'none'; 
             card.appendChild(infoContainer);
             this.infoContainer = infoContainer; // Store reference to the info container
 
@@ -248,13 +245,10 @@ Module.register("MMM-LineChartJS", {
         if (this.infoContainer) {
             this.infoContainer.innerHTML = '';
             this.infoLines = {};
-            // Hide info container by default, will be shown if any line enables it
-            this.infoContainer.style.display = 'none'; 
         }
 
         const datasets = [];
         const yAxesConfig = {}; // Object to store Y-axis configurations
-        let anyInfoShown = false; // Flag to track if any info line is enabled
 
         // Ensure chartConfig exists and is an array
         if (!Array.isArray(this.config.chartConfig) || this.config.chartConfig.length === 0) {
@@ -363,7 +357,6 @@ Module.register("MMM-LineChartJS", {
 
                 // Add info line if enabled
                 if (chartLineConfig.InfoShow && this.infoContainer) {
-                    anyInfoShown = true; // Set flag if any info is shown
                     let infoText = chartLineConfig.chartLabel + ": ";
                     const formatter = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
@@ -388,19 +381,6 @@ Module.register("MMM-LineChartJS", {
                 }
             }
         });
-
-        // Adjust canvas container margin based on whether info lines are shown
-        if (this.infoContainer && this.canvasElement) {
-            if (anyInfoShown) {
-                this.infoContainer.style.display = 'block'; // Show the container
-                // Set margin-top for canvas to account for header and info lines
-                this.canvasElement.parentNode.style.marginTop = '60px'; // 35px for header + 25px for info lines (approx)
-            } else {
-                this.infoContainer.style.display = 'none'; // Hide the container
-                // Set margin-top for canvas to account for only the header
-                this.canvasElement.parentNode.style.marginTop = '35px';
-            }
-        }
 
         if (datasets.length === 0) {
             Log.warn(`MMM-LineChartJS (${self.config.chartId}): No valid data available to display the chart.`);
