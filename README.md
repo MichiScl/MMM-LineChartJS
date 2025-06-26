@@ -121,6 +121,7 @@ You can add multiple instances of the module by using different chartIds and con
 | `chartConfig[i].fillGraph` | If `true`, the area below this line will be filled with `backgroundColor`. | `false` | `true`, `false` |
 | `chartConfig[i].pointRadius` | The radius of data points on the line. | `1` | Any non-negative number |
 | `chartConfig[i].pointHoverRadius` | The radius of data points when hovered over. | `5` | Any non-negative number |
+| `chartConfig[i].smoothingFactor` | The number of datapoins used for smoothing the line data via a moving average. `0` disables smoothing. Higher values result in stronger smoothing. | `0` | Any non-negative integer (0, 1, 2, ...) |
 | `chartConfig[i].yDataID` | The key in your JSON data objects that holds the values for this line's y-axis. | `"temperature"` or `"humidity"` (depending on array index) | Any string (matching a JSON key in your data) |
 | `chartConfig[i].yAxisAutoScale` | If `true`, the y-axis for this line will automatically scale based on the data's min/max values. If `false`, `yAxisMin` and `yAxisMax` are used. | `true` | `true`, `false` |
 | `chartConfig[i].yAxisMin` | The minimum value for the y-axis. Only effective when `yAxisAutoScale` is `false`. | `-10` (for Temperature) or `0` (for Humidity) | Any number |
