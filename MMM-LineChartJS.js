@@ -50,12 +50,6 @@ Module.register("MMM-LineChartJS", {
                 yAxisLabelShow: false, // Show y-axis label
                 yAxisAutoTicks: true, // Automatically calculate grid ticks in equal steps
                 yAxisTickSteps: 2, // To use if yAxisAutoTicks = false
-
-                // Show additional text line per chart Config
-                InfoShow: false,        // default false
-                InfoMinValue: true,     // Show minimum value of displayed values
-                InfoMaxValue: true,     // Show maximum value of displayed values
-                InfoCurValue: true,     // Show current value of displayed values
             },
             {
                 // Example Chart 2: Humidity
@@ -78,12 +72,6 @@ Module.register("MMM-LineChartJS", {
                 yAxisLabelShow: false,
                 yAxisAutoTicks: true,
                 yAxisTickSteps: 10,
-
-                // Show additional text line per chart Config
-                InfoShow: false,        // default false
-                InfoMinValue: true,     // Show minimum value of displayed values
-                InfoMaxValue: true,     // Show maximum value of displayed values
-                InfoCurValue: true,     // Show current value of displayed values
             }
         ]
     },
@@ -97,7 +85,6 @@ Module.register("MMM-LineChartJS", {
         this.canvasCreated = false; // Flag to track if canvas is created
         this.chartContainer = null; // Reference to the card container (div containing title, canvas)
         this.canvasElement = null; // Reference to the actual canvas DOM element
-        this.infoLines = {}; // Store references to info lines for updates
 
         this.loadChartJsScript();
     },
@@ -183,12 +170,6 @@ Module.register("MMM-LineChartJS", {
             titleElement.textContent = this.config.chartTitle; // Use chartTitle
             card.appendChild(titleElement);
 		
-            // Add info lines container
-            const infoContainer = document.createElement("div");
-            infoContainer.className = "mmm-linechartjs-info-container";
-            card.appendChild(infoContainer);
-            this.infoContainer = infoContainer; // Store reference to the info container
-
 
             // Add canvas container
             const canvasContainer = document.createElement("div");
@@ -241,12 +222,6 @@ Module.register("MMM-LineChartJS", {
             Log.info(`MMM-LineChartJS (${this.config.chartId}): Existing chart instance destroyed.`);
         }
 
-        // Clear existing info lines
-        if (this.infoContainer) {
-            this.infoContainer.innerHTML = '';
-            this.infoLines = {};
-        }
-
         const datasets = [];
         const yAxesConfig = {}; // Object to store Y-axis configurations
 
@@ -270,10 +245,6 @@ Module.register("MMM-LineChartJS", {
         // Iterate over each defined chart configuration
         this.config.chartConfig.forEach((chartLineConfig, index) => {
             const lineData = [];
-            let minVal = Infinity;
-            let maxVal = -Infinity;
-            let curVal = null; // Current value will be the last valid value
-
             // Filter and prepare data points for this specific line
             this.sensorData.forEach(entry => {
                 // Safely convert parsedTimestamp to a Date object if it's still a string
@@ -296,11 +267,6 @@ Module.register("MMM-LineChartJS", {
                 // Ensure both x and y values exist and are valid
                 if (isValidXValue && yValue !== undefined && yValue !== null && !isNaN(yValue)) {
                     lineData.push({ x: xValue, y: yValue });
-
-                    // Update min, max, current values
-                    if (yValue < minVal) minVal = yValue;
-                    if (yValue > maxVal) maxVal = yValue;
-                    curVal = yValue; // Always take the last valid value as current
                 } else {
                     Log.warn(`MMM-LineChartJS (${self.config.chartId}): Invalid data point for '${chartLineConfig.yDataID}' skipped. xValue: ${xValue}, yValue: ${yValue}, Original Entry: ${JSON.stringify(entry)}`);
                 }
@@ -354,31 +320,6 @@ Module.register("MMM-LineChartJS", {
                     min: chartLineConfig.yAxisAutoScale ? undefined : chartLineConfig.yAxisMin,
                     max: chartLineConfig.yAxisAutoScale ? undefined : chartLineConfig.yAxisMax,
                 };
-
-                // Add info line if enabled
-                if (chartLineConfig.InfoShow && this.infoContainer) {
-                    let infoText = chartLineConfig.chartLabel + ": ";
-                    const formatter = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
-                    if (chartLineConfig.InfoMinValue && minVal !== Infinity) {
-                        infoText += `Min: ${formatter.format(minVal)} `;
-                    }
-                    if (chartLineConfig.InfoMaxValue && maxVal !== -Infinity) {
-                        infoText += `/ Max: ${formatter.format(maxVal)} `;
-                    }
-                    if (chartLineConfig.InfoCurValue && curVal !== null) {
-                        infoText += `/ Cur: ${formatter.format(curVal)} `;
-                    }
-
-                    let infoLineElement = this.infoLines[chartLineConfig.yDataID];
-                    if (!infoLineElement) {
-                        infoLineElement = document.createElement("div");
-                        infoLineElement.className = "mmm-linechartjs-info-line dimmed light small";
-                        this.infoContainer.appendChild(infoLineElement);
-                        this.infoLines[chartLineConfig.yDataID] = infoLineElement;
-                    }
-                    infoLineElement.textContent = infoText.trim();
-                }
             }
         });
 
@@ -609,8 +550,7 @@ Module.register("MMM-LineChartJS", {
 
     // Add custom CSS to the module
     getStyles: function() {
-        // Return existing CSS and add a new one for info lines
-        return ["MMM-LineChartJS.css"]; 
+        return ["MMM-Charts.css"]; // CSS file remains the same for now, as this is just a naming convention for the module.
     },
 
     // Clean up chart and interval when module is suspended/removed
