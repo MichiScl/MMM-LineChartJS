@@ -39,6 +39,7 @@ Module.register("MMM-LineChartJS", {
                 fillGraph: false,
                 pointRadius: 1, // Default point size
                 pointHoverRadius: 5, // Default hover point size
+                smoothingFactor: 0, // New: Smoothing factor (0 = disabled, 1 = light, 2 = stronger, etc.)
 
                 // Settings for y-axis data
                 yDataID: "temperature", // JSON identifier to use as y data
@@ -61,6 +62,7 @@ Module.register("MMM-LineChartJS", {
                 fillGraph: false,
                 pointRadius: 1,
                 pointHoverRadius: 5,
+                smoothingFactor: 0, // New: Smoothing factor (0 = disabled, 1 = light, 2 = stronger, etc.)
 
                 // Settings for y-axis data
                 yDataID: "humidity",
@@ -244,7 +246,7 @@ Module.register("MMM-LineChartJS", {
 
         // Iterate over each defined chart configuration
         this.config.chartConfig.forEach((chartLineConfig, index) => {
-            const lineData = [];
+            let lineData = []; 
             // Filter and prepare data points for this specific line
             this.sensorData.forEach(entry => {
                 // Safely convert parsedTimestamp to a Date object if it's still a string
@@ -284,6 +286,24 @@ Module.register("MMM-LineChartJS", {
                         return 0;
                     }
                 });
+
+                // Apply smoothing if smoothingFactor is greater than 0
+                const smoothingFactor = chartLineConfig.smoothingFactor || 0;
+                if (smoothingFactor > 0) {
+                    const smoothedLineData = [];
+                    for (let i = 0; i < lineData.length; i++) {
+                        let sum = 0;
+                        let count = 0;
+                        // Determine the window for the moving average
+                        for (let j = Math.max(0, i - smoothingFactor); j <= Math.min(lineData.length - 1, i + smoothingFactor); j++) {
+                            sum += lineData[j].y;
+                            count++;
+                        }
+                        smoothedLineData.push({ x: lineData[i].x, y: sum / count });
+                    }
+                    lineData = smoothedLineData; // Use the smoothed data
+                    Log.info(`MMM-LineChartJS (${self.config.chartId}): Applied smoothing with factor ${smoothingFactor} to '${chartLineConfig.chartLabel}'.`);
+                }
             }
 
 
