@@ -46,6 +46,7 @@ Module.register("MMM-LineChartJS", {
                 yAxisAutoScale: true, // Automatic Y-axis scaling based on displayed data
                 yAxisMin: -10,
                 yAxisMax: 40,
+                yAxisShow: true, // NEW: Show or hide the y-axis
                 yAxisPosition: "left", // "left" or "right"
                 yAxisLabel: "Temperature (°C)", // Label for the y-axis
                 yAxisLabelShow: false, // Show y-axis label
@@ -69,6 +70,7 @@ Module.register("MMM-LineChartJS", {
                 yAxisAutoScale: true,
                 yAxisMin: 0,
                 yAxisMax: 100,
+                yAxisShow: true, // NEW: Show or hide the y-axis
                 yAxisPosition: "right",
                 yAxisLabel: "Humidity (%)",
                 yAxisLabelShow: false,
@@ -188,7 +190,7 @@ Module.register("MMM-LineChartJS", {
 
             this.canvasCreated = true; // Mark canvas as created
             this.chartContainer = card; // Store reference to the card for later updates
-            this.canvasElement = canvasElement; // Store reference to the canvas element
+            this.canvasElement = canvasElement; // Store reference to the actual canvas element
 
             // Initial status: Loading message (will be replaced by data or error message)
             const loading = document.createElement("div");
@@ -207,253 +209,263 @@ Module.register("MMM-LineChartJS", {
         return wrapper; // Return the originally created wrapper
     },
 
-    // Helper function to update/create the chart
-    updateChart: function() {
-        const self = this;
-        const chartElement = this.canvasElement; // Use the stored reference
+	// Helper function to update/create the chart
+	updateChart: function() {
+		const self = this;
+		const chartElement = this.canvasElement; // Use the stored reference
 
-        if (!chartElement) {
-            Log.error(`MMM-LineChartJS (${this.config.chartId}): Chart canvas element not found for updateChart. Aborting.`);
-            return;
-        }
+		if (!chartElement) {
+			Log.error(`MMM-LineChartJS (${this.config.chartId}): Chart canvas element not found for updateChart. Aborting.`);
+			return;
+		}
 
-        // Destroy existing Chart instance before creating a new one
-        if (this.chartInstance) {
-            this.chartInstance.destroy();
-            this.chartInstance = null;
-            Log.info(`MMM-LineChartJS (${this.config.chartId}): Existing chart instance destroyed.`);
-        }
+		// Destroy existing Chart instance before creating a new one
+		if (this.chartInstance) {
+			this.chartInstance.destroy();
+			this.chartInstance = null;
+			Log.info(`MMM-LineChartJS (${this.config.chartId}): Existing chart instance destroyed.`);
+		}
 
-        const datasets = [];
-        const yAxesConfig = {}; // Object to store Y-axis configurations
+		const datasets = [];
+		const yAxesConfig = {}; // Object to store Y-axis configurations
+		let globalYMin = Infinity;
+		let globalYMax = -Infinity;
+		let autoScaleActive = false; // Flag to check if any chart uses auto-scaling
 
-        // Ensure chartConfig exists and is an array
-        if (!Array.isArray(this.config.chartConfig) || this.config.chartConfig.length === 0) {
-            Log.error(`MMM-LineChartJS (${this.config.chartId}): 'chartConfig' is not configured as an array or is empty. No graphs can be drawn.`);
-            if (this.canvasElement) 
+		// Ensure chartConfig exists and is an array
+		if (!Array.isArray(this.config.chartConfig) || this.config.chartConfig.length === 0) {
+			Log.error(`MMM-LineChartJS (${this.config.chartId}): 'chartConfig' is not configured as an array or is empty. No graphs can be drawn.`);
+			if (this.canvasElement)
 			{
-                this.canvasElement.style.display = 'none';
-            }
-            const errorMsg = document.createElement("div");
-            errorMsg.className = "dimmed light small status-message";
-            errorMsg.innerHTML = `Error: 'chartConfig' is not configured correctly.`;
-            if (this.chartContainer) 
+				this.canvasElement.style.display = 'none';
+			}
+			const errorMsg = document.createElement("div");
+			errorMsg.className = "dimmed light small status-message";
+			errorMsg.innerHTML = `Error: 'chartConfig' is not configured correctly.`;
+			if (this.chartContainer)
 			{
-                 this.chartContainer.appendChild(errorMsg);
-            }
-            return;
-        }
+				 this.chartContainer.appendChild(errorMsg);
+			}
+			return;
+		}
 
-        // Iterate over each defined chart configuration
-        this.config.chartConfig.forEach((chartLineConfig, index) => {
-            let lineData = []; 
-            // Filter and prepare data points for this specific line
-            this.sensorData.forEach(entry => {
-                // Safely convert parsedTimestamp to a Date object if it's still a string
-                let xValue = entry.parsedTimestamp;
-                if (typeof xValue === 'string') {
-                    const tempDate = new Date(xValue);
-                    if (!isNaN(tempDate.getTime())) {
-                        xValue = tempDate;
-                    } else {
-                        Log.warn(`MMM-LineChartJS (${self.config.chartId}): Timestamp '${xValue}' could not be re-converted to a Date object.`);
-                        xValue = undefined; // Set to undefined to mark it as invalid
-                    }
-                }
+		// First pass: Prepare data and determine global min/max for auto-scaled charts
+		this.config.chartConfig.forEach((chartLineConfig, index) => {
+			let lineData = [];
+			// Filter and prepare data points for this specific line
+			this.sensorData.forEach(entry => {
+				// Safely convert parsedTimestamp to a Date object if it's still a string
+				let xValue = entry.parsedTimestamp;
+				if (typeof xValue === 'string') {
+					const tempDate = new Date(xValue);
+					if (!isNaN(tempDate.getTime())) {
+						xValue = tempDate;
+					} else {
+						Log.warn(`MMM-LineChartJS (${self.config.chartId}): Timestamp '${xValue}' could not be re-converted to a Date object.`);
+						xValue = undefined; // Set to undefined to mark it as invalid
+					}
+				}
 
-                const yValue = entry[chartLineConfig.yDataID]; // y-axis is dynamic via yDataID
+				const yValue = entry[chartLineConfig.yDataID]; // y-axis is dynamic via yDataID
 
-                // Additional check: Ensure xValue is a Date object
-                const isValidXValue = (xValue instanceof Date && !isNaN(xValue.getTime()));
+				// Additional check: Ensure xValue is a Date object
+				const isValidXValue = (xValue instanceof Date && !isNaN(xValue.getTime()));
 
-                // Ensure both x and y values exist and are valid
-                if (isValidXValue && yValue !== undefined && yValue !== null && !isNaN(yValue)) {
-                    lineData.push({ x: xValue, y: yValue });
-                } else {
-                    Log.warn(`MMM-LineChartJS (${self.config.chartId}): Invalid data point for '${chartLineConfig.yDataID}' skipped. xValue: ${xValue}, yValue: ${yValue}, Original Entry: ${JSON.stringify(entry)}`);
-                }
-            });
+				// Ensure both x and y values exist and are valid
+				if (isValidXValue && yValue !== undefined && yValue !== null && !isNaN(yValue)) {
+					lineData.push({ x: xValue, y: yValue });
+					// Check if this chart uses auto-scaling and update global min/max
+					if (chartLineConfig.yAxisAutoScale) {
+						autoScaleActive = true;
+						globalYMin = Math.min(globalYMin, yValue);
+						globalYMax = Math.max(globalYMax, yValue);
+					}
+				} else {
+					Log.warn(`MMM-LineChartJS (${self.config.chartId}): Invalid data point for '${chartLineConfig.yDataID}' skipped. xValue: ${xValue}, yValue: ${yValue}, Original Entry: ${JSON.stringify(entry)}`);
+				}
+			});
 
-            // Sort only if data exists
-            if (lineData.length > 0) {
-                lineData.sort((a, b) => {
-                    // Additional checks before calling getTime()
-                    if (a.x instanceof Date && b.x instanceof Date) {
-                        return a.x.getTime() - b.x.getTime();
-                    } else {
-                        Log.error(`MMM-LineChartJS (${self.config.chartId}): Invalid data type for x-axis during sorting. Expected: Date, Received: a.x type=${typeof a.x}, b.x type=${typeof b.x}`);
-                        // Fallback: If types are wrong, do not sort
-                        return 0;
-                    }
-                });
+			// Sort only if data exists
+			if (lineData.length > 0) {
+				lineData.sort((a, b) => {
+					// Additional checks before calling getTime()
+					if (a.x instanceof Date && b.x instanceof Date) {
+						return a.x.getTime() - b.x.getTime();
+					} else {
+						Log.error(`MMM-LineChartJS (${self.config.chartId}): Invalid data type for x-axis during sorting. Expected: Date, Received: a.x type=${typeof a.x}, b.x type=${typeof b.x}`);
+						// Fallback: If types are wrong, do not sort
+						return 0;
+					}
+				});
 
-                // Apply smoothing if smoothingFactor is greater than 0
-                const smoothingFactor = chartLineConfig.smoothingFactor || 0;
-                if (smoothingFactor > 0) {
-                    const smoothedLineData = [];
-                    for (let i = 0; i < lineData.length; i++) {
-                        let sum = 0;
-                        let count = 0;
-                        // Determine the window for the moving average
-                        for (let j = Math.max(0, i - smoothingFactor); j <= Math.min(lineData.length - 1, i + smoothingFactor); j++) {
-                            sum += lineData[j].y;
-                            count++;
-                        }
-                        smoothedLineData.push({ x: lineData[i].x, y: sum / count });
-                    }
-                    lineData = smoothedLineData; // Use the smoothed data
-                    Log.info(`MMM-LineChartJS (${self.config.chartId}): Applied smoothing with factor ${smoothingFactor} to '${chartLineConfig.chartLabel}'.`);
-                }
-            }
+				// Apply smoothing if smoothingFactor is greater than 0
+				const smoothingFactor = chartLineConfig.smoothingFactor || 0;
+				if (smoothingFactor > 0) {
+					const smoothedLineData = [];
+					for (let i = 0; i < lineData.length; i++) {
+						let sum = 0;
+						let count = 0;
+						// Determine the window for the moving average
+						for (let j = Math.max(0, i - smoothingFactor); j <= Math.min(lineData.length - 1, i + smoothingFactor); j++) {
+							sum += lineData[j].y;
+							count++;
+						}
+						smoothedLineData.push({ x: lineData[i].x, y: sum / count });
+					}
+					lineData = smoothedLineData; // Use the smoothed data
+					Log.info(`MMM-LineChartJS (${self.config.chartId}): Applied smoothing with factor ${smoothingFactor} to '${chartLineConfig.chartLabel}'.`);
+				}
+			}
 
+			if (lineData.length > 0) {
+				datasets.push({
+					label: chartLineConfig.chartLabel,
+					data: lineData,
+					borderColor: chartLineConfig.lineColor,
+					backgroundColor: chartLineConfig.backgroundColor,
+					yAxisID: `yAxis-${index}-${chartLineConfig.yAxisPosition}`, // Unique ID for each Y-axis
+					tension: 0.1, // Smooth line
+					fill: chartLineConfig.fillGraph,
+					pointRadius: chartLineConfig.pointRadius,
+					pointHoverRadius: chartLineConfig.pointHoverRadius,
+				});
+			}
+		});
 
-            if (lineData.length > 0) {
-                datasets.push({
-                    label: chartLineConfig.chartLabel,
-                    data: lineData,
-                    borderColor: chartLineConfig.lineColor,
-                    backgroundColor: chartLineConfig.backgroundColor,
-                    yAxisID: `yAxis-${index}-${chartLineConfig.yAxisPosition}`, // Unique ID for each Y-axis
-                    tension: 0.1, // Smooth line
-                    fill: chartLineConfig.fillGraph,
-                    pointRadius: chartLineConfig.pointRadius,
-                    pointHoverRadius: chartLineConfig.pointHoverRadius,
-                });
+		if (datasets.length === 0) {
+			Log.warn(`MMM-LineChartJS (${self.config.chartId}): No valid data available to display the chart.`);
+			if (this.canvasElement) {
+				this.canvasElement.style.display = 'none';
+			}
+			const noValidDataMsg = document.createElement("div");
+			noValidDataMsg.className = "dimmed light small status-message";
+			noValidDataMsg.innerHTML = `No valid data available for the chart.`;
+			if (this.chartContainer) {
+				 this.chartContainer.appendChild(noValidDataMsg);
+			}
+			return;
+		}
 
-                // Configure the Y-axis
-                const yAxisId = `yAxis-${index}-${chartLineConfig.yAxisPosition}`;
-                yAxesConfig[yAxisId] = {
-                    type: 'linear',
-                    display: 'auto',
-                    position: chartLineConfig.yAxisPosition,
-                    title: {
-                        display: chartLineConfig.yAxisLabelShow,
-                        text: chartLineConfig.yAxisLabel,
-                        color: '#ccc',
-                    },
-                    ticks: {
-                        color: '#ccc',
-                        autoSkip: chartLineConfig.yAxisAutoTicks,
-                        stepSize: chartLineConfig.yAxisAutoTicks ? undefined : chartLineConfig.yAxisTickSteps, // Step size only if AutoTicks is off
-                    },
-                    grid: { color: 'rgba(200, 200, 200, 0.1)', drawBorder: false },
-                    min: chartLineConfig.yAxisAutoScale ? undefined : chartLineConfig.yAxisMin,
-                    max: chartLineConfig.yAxisAutoScale ? undefined : chartLineConfig.yAxisMax,
-                };
-            }
-        });
+		// Second pass: Configure the Y-axes based on the calculated global min/max
+		this.config.chartConfig.forEach((chartLineConfig, index) => {
+			const yAxisId = `yAxis-${index}-${chartLineConfig.yAxisPosition}`;
+			const yMin = chartLineConfig.yAxisAutoScale ? globalYMin : chartLineConfig.yAxisMin;
+			const yMax = chartLineConfig.yAxisAutoScale ? globalYMax : chartLineConfig.yAxisMax;
 
-        if (datasets.length === 0) {
-            Log.warn(`MMM-LineChartJS (${self.config.chartId}): No valid data available to display the chart.`);
-            if (this.canvasElement) {
-                this.canvasElement.style.display = 'none';
-            }
-            const noValidDataMsg = document.createElement("div");
-            noValidDataMsg.className = "dimmed light small status-message";
-            noValidDataMsg.innerHTML = `No valid data available for the chart.`;
-            if (this.chartContainer) {
-                 this.chartContainer.appendChild(noValidDataMsg);
-            }
-            return;
-        }
+			yAxesConfig[yAxisId] = {
+				type: 'linear',
+				display: chartLineConfig.yAxisShow,
+				position: chartLineConfig.yAxisPosition,
+				title: {
+					display: chartLineConfig.yAxisLabelShow,
+					text: chartLineConfig.yAxisLabel,
+					color: '#ccc',
+				},
+				ticks: {
+					color: '#ccc',
+					autoSkip: chartLineConfig.yAxisAutoTicks,
+					stepSize: chartLineConfig.yAxisAutoTicks ? undefined : chartLineConfig.yAxisTickSteps,
+				},
+				grid: { color: 'rgba(200, 200, 200, 0.1)', drawBorder: false },
+				min: yMin,
+				max: yMax,
+			};
+		});
 
-        // X-axis configuration
-        const xAxisConfig = {
-            type: 'time', // Always time
-            time: {
-                unit: 'hour', // Default for time axes, can be adjusted if needed
-                displayFormats: {
-                    hour: this.config.xAxisDisplayFormat
-                },
-                tooltipFormat: 'dd.MM.yyyy HH:mm:ss' // Default for tooltip
-            },
-            title: {
-                display: this.config.xAxisLabelShow,
-                text: this.config.xAxisLabel,
-                color: '#ccc'
-            },
-            ticks: {
-                color: '#ccc',
-                autoSkip: this.config.xAxisAutoTicks,
-                maxTicksLimit: this.config.xAxisAutoTicks ? 10 : undefined,
-                stepSize: this.config.xAxisAutoTicks ? undefined : this.config.xAxisTickSteps,
-            },
-            grid: { color: 'rgba(200, 200, 200, 0.1)', drawBorder: false },
-            position: this.config.xAxisPosition,
-            // Min/Max for X-axis based on hoursToDisplay, as data is filtered accordingly
-            min: new Date(Date.now() - (this.config.hoursToDisplay * 60 * 60 * 1000)).toISOString(),
-            max: new Date().toISOString(),
-        };
+		// X-axis configuration remains unchanged
+		const xAxisConfig = {
+			type: 'time',
+			time: {
+				unit: 'hour',
+				displayFormats: {
+					hour: this.config.xAxisDisplayFormat
+				},
+				tooltipFormat: 'dd.MM.yyyy HH:mm:ss'
+			},
+			title: {
+				display: this.config.xAxisLabelShow,
+				text: this.config.xAxisLabel,
+				color: '#ccc'
+			},
+			ticks: {
+				color: '#ccc',
+				autoSkip: this.config.xAxisAutoTicks,
+				maxTicksLimit: this.config.xAxisAutoTicks ? 10 : undefined,
+				stepSize: this.config.xAxisAutoTicks ? undefined : this.config.xAxisTickSteps,
+			},
+			grid: { color: 'rgba(200, 200, 200, 0.1)', drawBorder: false },
+			position: this.config.xAxisPosition,
+			min: new Date(Date.now() - (this.config.hoursToDisplay * 60 * 60 * 1000)).toISOString(),
+			max: new Date().toISOString(),
+		};
 
-        // Combine all axis configurations
-        const scalesConfig = {
-            x: xAxisConfig,
-            ...yAxesConfig // Add all dynamically created Y-axes
-        };
+		// Combine all axis configurations
+		const scalesConfig = {
+			x: xAxisConfig,
+			...yAxesConfig
+		};
 
-        // Chart.js Configuration
-        const config = {
-            type: 'line',
-            data: {
-                datasets: datasets
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false, // Allow custom height/width
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
-                stacked: false,
-                plugins: {
-                    title: {
-                        display: false, // Module title is already handled by getDom
-                    },
-                    legend: {
-                        display: true,
-                        labels: {
-                            color: '#eee', // Legend text color
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            title: function(context) {
-                                // Format title (timestamp) for the tooltip
-                                return new Date(context[0].parsed.x).toLocaleString('de-DE', {
-                                    year: 'numeric', month: '2-digit', day: '2-digit',
-                                    hour: '2-digit', minute: '2-digit', second: '2-digit'
-                                });
-                            },
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== null) {
-                                    label += context.parsed.y.toFixed(1); // One decimal place
-                                    // Add units based on yAxisLabel if available
-                                    const yAxisId = context.dataset.yAxisID;
-                                    if (self.chartInstance && self.chartInstance.options.scales[yAxisId] && self.chartInstance.options.scales[yAxisId].title && self.chartInstance.options.scales[yAxisId].title.text) {
-                                        // Try to extract the unit from the label, e.g., "(°C)"
-                                        const match = self.chartInstance.options.scales[yAxisId].title.text.match(/\(([^)]+)\)/);
-                                        if (match) {
-                                            label += ` ${match[1]}`;
-                                        }
-                                    }
-                                }
-                                return label;
-                            }
-                        }
-                    }
-                },
-                scales: scalesConfig
-            }
-        };
+		// Chart.js Configuration
+		const config = {
+			type: 'line',
+			data: {
+				datasets: datasets
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				interaction: {
+					mode: 'index',
+					intersect: false,
+				},
+				stacked: false,
+				plugins: {
+					title: {
+						display: false,
+					},
+					legend: {
+						display: true,
+						labels: {
+							color: '#eee',
+						}
+					},
+					tooltip: {
+						callbacks: {
+							title: function(context) {
+								return new Date(context[0].parsed.x).toLocaleString('de-DE', {
+									year: 'numeric', month: '2-digit', day: '2-digit',
+									hour: '2-digit', minute: '2-digit', second: '2-digit'
+								});
+							},
+							label: function(context) {
+								let label = context.dataset.label || '';
+								if (label) {
+									label += ': ';
+								}
+								if (context.parsed.y !== null) {
+									label += context.parsed.y.toFixed(1);
+									const yAxisId = context.dataset.yAxisID;
+									if (self.chartInstance && self.chartInstance.options.scales[yAxisId] && self.chartInstance.options.scales[yAxisId].title && self.chartInstance.options.scales[yAxisId].title.text) {
+										const match = self.chartInstance.options.scales[yAxisId].title.text.match(/\(([^)]+)\)/);
+										if (match) {
+											label += ` ${match[1]}`;
+										}
+									}
+								}
+								return label;
+							}
+						}
+					}
+				},
+				scales: scalesConfig
+			}
+		};
 
-        // Create the new Chart instance
-        this.chartInstance = new Chart(chartElement, config);
-        Log.info(`MMM-LineChartJS (${self.config.chartId}): New chart instance created.`);
-    },
+		// Create the new Chart instance
+		this.chartInstance = new Chart(chartElement, config);
+		Log.info(`MMM-LineChartJS (${self.config.chartId}): New chart instance created.`);
+	},
+
 
     notificationReceived: function(notification, payload, sender) {
         if (notification === "DOM_OBJECTS_CREATED") {
