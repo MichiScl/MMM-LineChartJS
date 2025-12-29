@@ -39,14 +39,15 @@ Module.register("MMM-LineChartJS", {
                 fillGraph: false,
                 pointRadius: 1, // Default point size
                 pointHoverRadius: 5, // Default hover point size
-                smoothingFactor: 0, // New: Smoothing factor (0 = disabled, 1 = light, 2 = stronger, etc.)
+                smoothingFactor: 0, // Smoothing factor (0 = disabled, 1 = light, 2 = stronger, etc.)
+                connectGaps: false, // Connect missing data points? (true = yes, false = no/gap)
 
                 // Settings for y-axis data
                 yDataID: "temperature", // JSON identifier to use as y data
                 yAxisAutoScale: true, // Automatic Y-axis scaling based on displayed data
                 yAxisMin: -10,
                 yAxisMax: 40,
-                yAxisShow: true, // NEW: Show or hide the y-axis
+                yAxisShow: true, // Show or hide the y-axis
                 yAxisPosition: "left", // "left" or "right"
                 yAxisLabel: "Temperature (°C)", // Label for the y-axis
                 yAxisLabelShow: false, // Show y-axis label
@@ -63,14 +64,15 @@ Module.register("MMM-LineChartJS", {
                 fillGraph: false,
                 pointRadius: 1,
                 pointHoverRadius: 5,
-                smoothingFactor: 0, // New: Smoothing factor (0 = disabled, 1 = light, 2 = stronger, etc.)
+                smoothingFactor: 0, // Smoothing factor (0 = disabled, 1 = light, 2 = stronger, etc.)
+                connectGaps: false, // Connect missing data points? (true = yes, false = no/gap)
 
                 // Settings for y-axis data
                 yDataID: "humidity",
                 yAxisAutoScale: true,
                 yAxisMin: 0,
                 yAxisMax: 100,
-                yAxisShow: true, // NEW: Show or hide the y-axis
+                yAxisShow: true, // Show or hide the y-axis
                 yAxisPosition: "right",
                 yAxisLabel: "Humidity (%)",
                 yAxisLabelShow: false,
@@ -271,15 +273,20 @@ Module.register("MMM-LineChartJS", {
 				// Additional check: Ensure xValue is a Date object
 				const isValidXValue = (xValue instanceof Date && !isNaN(xValue.getTime()));
 
-				// Ensure both x and y values exist and are valid
-				if (isValidXValue && yValue !== undefined && yValue !== null && !isNaN(yValue)) {
-					lineData.push({ x: xValue, y: yValue });
-					// Check if this chart uses auto-scaling and update global min/max
-					if (chartLineConfig.yAxisAutoScale) {
-						autoScaleActive = true;
-						globalYMin = Math.min(globalYMin, yValue);
-						globalYMax = Math.max(globalYMax, yValue);
-					}
+        // allow null or undefined yValues into the array as 'null' to support gaps.
+				if (isValidXValue) {
+                    if (yValue !== undefined && yValue !== null && !isNaN(yValue)) {
+					    lineData.push({ x: xValue, y: yValue });
+                        // Check if this chart uses auto-scaling and update global min/max
+                        if (chartLineConfig.yAxisAutoScale) {
+                            autoScaleActive = true;
+                            globalYMin = Math.min(globalYMin, yValue);
+                            globalYMax = Math.max(globalYMax, yValue);
+                        }
+                    } else {
+                        // Push null to let Chart.js handle the gap (based on connectGaps/spanGaps)
+                        lineData.push({ x: xValue, y: null });
+                    }
 				} else {
 					Log.warn(`MMM-LineChartJS (${self.config.chartId}): Invalid data point for '${chartLineConfig.yDataID}' skipped. xValue: ${xValue}, yValue: ${yValue}, Original Entry: ${JSON.stringify(entry)}`);
 				}
@@ -303,14 +310,25 @@ Module.register("MMM-LineChartJS", {
 				if (smoothingFactor > 0) {
 					const smoothedLineData = [];
 					for (let i = 0; i < lineData.length; i++) {
+            if (lineData[i].y === null) {
+              smoothedLineData.push({ x: lineData[i].x, y: null });
+              continue;
+            }
 						let sum = 0;
 						let count = 0;
 						// Determine the window for the moving average
 						for (let j = Math.max(0, i - smoothingFactor); j <= Math.min(lineData.length - 1, i + smoothingFactor); j++) {
-							sum += lineData[j].y;
-							count++;
-						}
-						smoothedLineData.push({ x: lineData[i].x, y: sum / count });
+            if (lineData[j].y !== null) {
+							    sum += lineData[j].y;
+							    count++;
+            }
+					}
+                        
+            if (count > 0) {
+						    smoothedLineData.push({ x: lineData[i].x, y: sum / count });
+                        } else {
+                            smoothedLineData.push({ x: lineData[i].x, y: null });
+                        }
 					}
 					lineData = smoothedLineData; // Use the smoothed data
 					Log.info(`MMM-LineChartJS (${self.config.chartId}): Applied smoothing with factor ${smoothingFactor} to '${chartLineConfig.chartLabel}'.`);
@@ -326,6 +344,7 @@ Module.register("MMM-LineChartJS", {
 					yAxisID: `yAxis-${index}-${chartLineConfig.yAxisPosition}`, // Unique ID for each Y-axis
 					tension: 0.1, // Smooth line
 					fill: chartLineConfig.fillGraph,
+          spanGaps: chartLineConfig.connectGaps, // Configurable gap handling
 					pointRadius: chartLineConfig.pointRadius,
 					pointHoverRadius: chartLineConfig.pointHoverRadius,
 				});
