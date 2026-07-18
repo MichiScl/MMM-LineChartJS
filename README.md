@@ -40,30 +40,174 @@ npm install
 
 Example configuration
 
+This example mirrors the actual two-instance configuration used in the provided config.js:
+
 ```js
 {
   module: "MMM-LineChartJS",
   position: "bottom_left",
   config: {
-    chartId: "outdoorclimate",
-    dataFileUrl: "/home/pi/MagicMirror/modules/MMM-LineChartJS/data/dht_data_outdoor.json",
+    chartId: "chart1",
+    dataFileUrl: "http://192.168.178.59/sensordata/dht_sensor_data.json",
+    updateInterval: 600000,
+    hoursToDisplay: 12,
+    maxDataPoints: 5000,
+    chartWidth: 500,
+    chartHeight: 180,
+    chartTitle: "Temperatur",
     xDataID: "timestamp",
-    hoursToDisplay: 24,
+    xDataTimeFormat: "DD.MM.YYYYTHH:MM:SS",
+    xAxisDisplayFormat: "HH:mm",
+    xAxisPosition: "bottom",
+    xAxisLabel: "Uhrzeit",
+    xAxisLabelShow: false,
+    xAxisAutoTicks: true,
+    xAxisTickSteps: 1,
     chartConfig: [
       {
-        yDataID: "temperature",
+        smoothingFactor: 0,
+        connectGaps: true,
+        responsive: true,
+        chartLabel: "innen",
+        showChartLabel: true,
+        lineColor: "rgb(255, 99, 132)",
+        backgroundColor: "rgba(255, 99, 132, 0.1)",
+        fillGraph: false,
+        pointRadius: 1,
+        pointHoverRadius: 5,
+        yDataID: "temp_innen",
         yAxisAutoScale: true,
-        chartLabel: "Temperature"
+        yAxisShow: true,
+        yAxisPosition: "left",
+        yAxisLabel: "Temperatur (°C)",
+        yAxisLabelShow: true,
+        yAxisAutoTicks: true
       },
       {
-        yDataID: "humidity",
+        smoothingFactor: 0,
+        connectGaps: true,
+        responsive: true,
+        chartLabel: "aussen",
+        showChartLabel: true,
+        lineColor: "rgb(204, 0, 0)",
+        backgroundColor: "rgba(54, 162, 235, 0.1)",
+        fillGraph: false,
+        pointRadius: 1,
+        pointHoverRadius: 5,
+        yDataID: "temp_aussen",
         yAxisAutoScale: true,
-        chartLabel: "Humidity"
+        yAxisShow: false,
+        yAxisPosition: "left",
+        yAxisLabel: "Temperatur (°C)",
+        yAxisLabelShow: false,
+        yAxisAutoTicks: true
+      },
+      {
+        smoothingFactor: 0,
+        connectGaps: true,
+        responsive: true,
+        chartLabel: "innen",
+        showChartLabel: true,
+        lineColor: "rgb(111, 168, 220)",
+        fillGraph: false,
+        pointRadius: 1,
+        pointHoverRadius: 5,
+        yDataID: "hum_innen",
+        yAxisAutoScale: true,
+        yAxisShow: true,
+        yAxisPosition: "right",
+        yAxisLabel: "Temperatur (°C)",
+        yAxisLabelShow: true,
+        yAxisAutoTicks: true
+      },
+      {
+        smoothingFactor: 0,
+        connectGaps: true,
+        responsive: true,
+        chartLabel: "aussen",
+        showChartLabel: true,
+        lineColor: "rgb(11, 83, 148)",
+        fillGraph: false,
+        pointRadius: 1,
+        pointHoverRadius: 5,
+        yDataID: "hum_aussen",
+        yAxisAutoScale: true,
+        yAxisShow: false,
+        yAxisPosition: "right",
+        yAxisLabelShow: false,
+        yAxisAutoTicks: true
+      }
+    ]
+  }
+},
+{
+  module: "MMM-LineChartJS",
+  position: "bottom_center",
+  config: {
+    chartId: "chart2",
+    dataFileUrl: "http://192.168.178.59/sensordata/dht_sensor_data.json",
+    updateInterval: 600000,
+    hoursToDisplay: 12,
+    maxDataPoints: 5000,
+    chartWidth: 500,
+    chartHeight: 180,
+    chartTitle: "Luftfeuchtigkeit",
+    xDataID: "timestamp",
+    xDataTimeFormat: "DD.MM.YYYYTHH:MM:SS",
+    xAxisDisplayFormat: "HH:mm",
+    xAxisPosition: "bottom",
+    xAxisLabel: "Uhrzeit",
+    xAxisLabelShow: false,
+    xAxisAutoTicks: true,
+    xAxisTickSteps: 1,
+    chartConfig: [
+      {
+        smoothingFactor: 0,
+        connectGaps: true,
+        responsive: true,
+        chartLabel: "innen",
+        showChartLabel: true,
+        lineColor: "rgb(111, 168, 220)",
+        fillGraph: false,
+        pointRadius: 1,
+        pointHoverRadius: 5,
+        yDataID: "hum_innen",
+        yAxisAutoScale: true,
+        yAxisShow: true,
+        yAxisPosition: "right",
+        yAxisLabel: "Temperatur (°C)",
+        yAxisLabelShow: true,
+        yAxisAutoTicks: true
+      },
+      {
+        smoothingFactor: 0,
+        connectGaps: true,
+        responsive: true,
+        chartLabel: "aussen",
+        showChartLabel: true,
+        lineColor: "rgb(11, 83, 148)",
+        fillGraph: false,
+        pointRadius: 1,
+        pointHoverRadius: 5,
+        yDataID: "hum_aussen",
+        yAxisAutoScale: true,
+        yAxisShow: false,
+        yAxisPosition: "right",
+        yAxisLabelShow: false,
+        yAxisAutoTicks: true
       }
     ]
   }
 }
 ```
+
+## Display Preview
+
+These screenshots show the module in use with two chart instances:
+
+![MMM-LineChartJS preview 1](picture_1.jpg)
+
+![MMM-LineChartJS preview 2](picture_2.jpg)
 
 Configuration highlights
 - `chartId`: unique identifier for each chart instance. Required when using multiple charts.
