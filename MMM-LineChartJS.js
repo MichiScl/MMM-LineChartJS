@@ -341,7 +341,7 @@ Module.register("MMM-LineChartJS", {
 
 			if (lineData.length > 0) {
 				datasets.push({
-					label: chartLineConfig.chartLabel,
+					label: chartLineConfig.chartLabel || chartLineConfig.yDataID,
 					data: lineData,
 					borderColor: chartLineConfig.lineColor,
 					backgroundColor: chartLineConfig.backgroundColor,
@@ -462,23 +462,9 @@ Module.register("MMM-LineChartJS", {
 						display: this.config.chartConfig.some(chartLineConfig => chartLineConfig.showChartLabel !== false),
 						labels: {
 							color: '#eee',
-							generateLabels: function(chart) {
-								const labels = [];
-								chart.data.datasets.forEach((dataset, datasetIndex) => {
-									if (dataset.showChartLabel === false) {
-										return;
-									}
-									const meta = chart.getDatasetMeta(datasetIndex);
-									labels.push({
-										text: dataset.label,
-										fillStyle: dataset.backgroundColor || dataset.borderColor,
-										strokeStyle: dataset.borderColor,
-										lineWidth: meta.dataset ? meta.dataset.borderWidth : 1,
-										hidden: dataset.hidden,
-										datasetIndex: datasetIndex
-									});
-								});
-								return labels;
+							filter: function(legendItem, data) {
+								const dataset = data.datasets[legendItem.datasetIndex];
+								return dataset && dataset.showChartLabel !== false;
 							}
 						}
 					},
