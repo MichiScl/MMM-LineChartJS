@@ -230,9 +230,10 @@ Module.register("MMM-LineChartJS", {
 
 		const datasets = [];
 		const yAxesConfig = {}; // Object to store Y-axis configurations
-		let globalYMin = Infinity;
-		let globalYMax = -Infinity;
-		let autoScaleActive = false; // Flag to check if any chart uses auto-scaling
+		const positionBounds = {
+			left: { min: Infinity, max: -Infinity, autoScaleActive: false },
+			right: { min: Infinity, max: -Infinity, autoScaleActive: false }
+		};
 
 		// Ensure chartConfig exists and is an array
 		if (!Array.isArray(this.config.chartConfig) || this.config.chartConfig.length === 0) {
@@ -251,9 +252,10 @@ Module.register("MMM-LineChartJS", {
 			return;
 		}
 
-		// First pass: Prepare data and determine global min/max for auto-scaled charts
+		// First pass: Prepare data and determine position-based min/max for auto-scaled charts
 		this.config.chartConfig.forEach((chartLineConfig, index) => {
 			let lineData = [];
+			const position = chartLineConfig.yAxisPosition || "left";
 			// Filter and prepare data points for this specific line
 			this.sensorData.forEach(entry => {
 				// Safely convert parsedTimestamp to a Date object if it's still a string
@@ -277,11 +279,13 @@ Module.register("MMM-LineChartJS", {
 				if (isValidXValue) {
                     if (yValue !== undefined && yValue !== null && !isNaN(yValue)) {
 					    lineData.push({ x: xValue, y: yValue });
-                        // Check if this chart uses auto-scaling and update global min/max
+                        // Check if this chart uses auto-scaling and update position-specific min/max
                         if (chartLineConfig.yAxisAutoScale) {
-                            autoScaleActive = true;
-                            globalYMin = Math.min(globalYMin, yValue);
-                            globalYMax = Math.max(globalYMax, yValue);
+                            if (positionBounds[position]) {
+                                positionBounds[position].autoScaleActive = true;
+                                positionBounds[position].min = Math.min(positionBounds[position].min, yValue);
+                                positionBounds[position].max = Math.max(positionBounds[position].max, yValue);
+                            }
                         }
                     } else {
                         // Push null to let Chart.js handle the gap (based on connectGaps/spanGaps)
@@ -341,7 +345,7 @@ Module.register("MMM-LineChartJS", {
 					data: lineData,
 					borderColor: chartLineConfig.lineColor,
 					backgroundColor: chartLineConfig.backgroundColor,
-					yAxisID: `yAxis-${index}-${chartLineConfig.yAxisPosition}`, // Unique ID for each Y-axis
+					yAxisID: `yAxis-${position}`, // Unique ID for each Y-axis position (left or right)
 					tension: 0.1, // Smooth line
 					fill: chartLineConfig.fillGraph,
           spanGaps: chartLineConfig.connectGaps, // Configurable gap handling
@@ -365,30 +369,41 @@ Module.register("MMM-LineChartJS", {
 			return;
 		}
 
-		// Second pass: Configure the Y-axes based on the calculated global min/max
-		this.config.chartConfig.forEach((chartLineConfig, index) => {
-			const yAxisId = `yAxis-${index}-${chartLineConfig.yAxisPosition}`;
-			const yMin = chartLineConfig.yAxisAutoScale ? globalYMin : chartLineConfig.yAxisMin;
-			const yMax = chartLineConfig.yAxisAutoScale ? globalYMax : chartLineConfig.yAxisMax;
+		// Second pass: Configure the Y-axes based on the calculated position-specific min/max
+		const positions = ["left", "right"];
+		positions.forEach(position => {
+			// Find primary config for this position (prefer visible one)
+			const primaryConfig = this.config.chartConfig.find(c => (c.yAxisPosition || "left") === position && c.yAxisShow)
+				|| this.config.chartConfig.find(c => (c.yAxisPosition || "left") === position);
 
-			yAxesConfig[yAxisId] = {
-				type: 'linear',
-				display: chartLineConfig.yAxisShow,
-				position: chartLineConfig.yAxisPosition,
-				title: {
-					display: chartLineConfig.yAxisLabelShow,
-					text: chartLineConfig.yAxisLabel,
-					color: '#ccc',
-				},
-				ticks: {
-					color: '#ccc',
-					autoSkip: chartLineConfig.yAxisAutoTicks,
-					stepSize: chartLineConfig.yAxisAutoTicks ? undefined : chartLineConfig.yAxisTickSteps,
-				},
-				grid: { color: 'rgba(200, 200, 200, 0.1)', drawBorder: false },
-				min: yMin,
-				max: yMax,
-			};
+			if (primaryConfig) {
+				const yAxisId = `yAxis-${position}`;
+				const bounds = positionBounds[position];
+				
+				// Determine if we should auto-scale this axis
+				const isAutoScale = primaryConfig.yAxisAutoScale || bounds.autoScaleActive;
+				const yMin = isAutoScale ? (bounds.min !== Infinity ? bounds.min : undefined) : primaryConfig.yAxisMin;
+				const yMax = isAutoScale ? (bounds.max !== -Infinity ? bounds.max : undefined) : primaryConfig.yAxisMax;
+
+				yAxesConfig[yAxisId] = {
+					type: 'linear',
+					display: primaryConfig.yAxisShow,
+					position: position,
+					title: {
+						display: primaryConfig.yAxisLabelShow,
+						text: primaryConfig.yAxisLabel,
+						color: '#ccc',
+					},
+					ticks: {
+						color: '#ccc',
+						autoSkip: primaryConfig.yAxisAutoTicks,
+						stepSize: primaryConfig.yAxisAutoTicks ? undefined : primaryConfig.yAxisTickSteps,
+					},
+					grid: { color: 'rgba(200, 200, 200, 0.1)', drawBorder: false },
+					min: yMin,
+					max: yMax,
+				};
+			}
 		});
 
 		// X-axis configuration remains unchanged
