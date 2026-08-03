@@ -35,8 +35,17 @@ module.exports = NodeHelper.create({
                 data = await response.json();
             } else {
                 console.log(`MMM-LineChartJS NodeHelper (${chartId}): Reading data from local file: ${url}`);
-                const fileContent = await fs.readFile(url, 'utf8');
-                data = JSON.parse(fileContent);
+                try {
+                    const fileContent = await fs.readFile(url, 'utf8');
+                    data = JSON.parse(fileContent);
+                } catch (fsErr) {
+                    if (fsErr && fsErr.code === 'ENOENT') {
+                        console.info(`MMM-LineChartJS NodeHelper (${chartId}): Data file not found or inaccessible: ${url}`);
+                        this.sendSocketNotification("SENSOR_DATA_FETCHED", { success: false, error: 'file_not_accessible', chartId: chartId });
+                        return;
+                    }
+                    throw fsErr;
+                }
             }
 
             let processedData = [];
